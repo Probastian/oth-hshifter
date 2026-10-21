@@ -1,0 +1,46 @@
+<Project>
+  <!-- Per-machine overrides (gitignored). Create GamePath.user.props to set <GamePath>. -->
+  <Import Project="$(MSBuildThisFileDirectory)GamePath.user.props" Condition="Exists('$(MSBuildThisFileDirectory)GamePath.user.props')" />
+
+  <PropertyGroup>
+    <GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\over the hill</GamePath>
+    <MLPath>$(GamePath)\MelonLoader\net6</MLPath>
+    <InteropPath>$(GamePath)\MelonLoader\Il2CppAssemblies</InteropPath>
+    <ModsPath>$(GamePath)\Mods</ModsPath>
+
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>embedded</DebugType>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Interop assemblies are huge; their XML-less public surface trips this. -->
+    <NoWarn>$(NoWarn);CS8981;CS0436;CS1701;CS1702</NoWarn>
+
+    <!-- Copy the built DLL into <GamePath>\Mods after every build. -->
+    <DeployToGame Condition="'$(DeployToGame)' == ''">true</DeployToGame>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MelonLoader + Harmony + Il2CppInterop -->
+    <Reference Include="MelonLoader"><HintPath>$(MLPath)\MelonLoader.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(MLPath)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(MLPath)\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Common"><HintPath>$(MLPath)\Il2CppInterop.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(MLPath)\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+
+    <!-- Every generated game/Unity interop assembly (Assembly-CSharp, UnityEngine.*, Fusion, TMP, InputSystem, ...) -->
+    <InteropDlls Include="$(InteropPath)\*.dll" />
+    <Reference Include="@(InteropDlls)"><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <Target Name="DeployMod" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true' And '$(IsTemplate)' != 'true' And Exists('$(ModsPath)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)" ContinueOnError="WarnAndContinue" Retries="2" RetryDelayMilliseconds="300">
+      <Output TaskParameter="CopiedFiles" ItemName="_DeployedFile" />
+    </Copy>
+    <Message Importance="high" Condition="'@(_DeployedFile)' != ''" Text="Deployed $(TargetFileName) -> $(ModsPath)" />
+    <Message Importance="high" Condition="'@(_DeployedFile)' == ''" Text="NOT deployed: $(TargetFileName) is locked (close the game, then run scripts\deploy.ps1)" />
+  </Target>
+</Project>
