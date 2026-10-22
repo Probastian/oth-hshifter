@@ -1,7 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Il2CppFunCore.Style;
 using Il2CppNobi.UiRoundedCorners;
 using Il2CppTMPro;
@@ -15,7 +13,7 @@ namespace OthShared
     ///
     /// The look comes straight from the game's active FunStyleSheet (the same named colours and text styles the game's
     /// own HUD uses: "Typography/White", "Typography/Yellow", "Hud/Transfer/Selected", text style "Hud_Transfer_Selected" ...),
-    /// panels get the game's rounded-corner component. <see cref="DumpLook"/> reports what was used.
+    /// panels get the game's rounded-corner component.
     /// </summary>
     internal static class GameUi
     {
@@ -29,7 +27,6 @@ namespace OthShared
             public Color ChipOff = new Color(0f, 0f, 0f, 0.5f);
             public Color ChipOn = new Color(1f, 0.976f, 0.933f, 1f);             // Typography/White
             public Color Accent = new Color(1f, 0.847f, 0.396f, 1f);             // Typography/Yellow
-            public string Source = "defaults";
         }
 
         internal static Look Current { get; private set; } = new Look();
@@ -37,7 +34,6 @@ namespace OthShared
 
         private static float _nextTry;
         private static bool _roundedBroken;
-        private static readonly StringBuilder Report = new StringBuilder();
 
         // ------------------------------------------------------------------ look discovery
 
@@ -48,21 +44,16 @@ namespace OthShared
             if (!force && Time.realtimeSinceStartup < _nextTry) return false;
             _nextTry = Time.realtimeSinceStartup + 2f;
 
-            Report.Clear();
             var look = new Look();
             try
             {
                 bool ok = FromStyleSheet(look);
                 Current = look;
                 Resolved = ok;
-                Report.AppendLine($"RESULT source={look.Source} font={(look.Font != null ? look.Font.name : "null")} style={look.FontStyle} text={look.Text} " +
-                                  $"textDark={look.TextDark} panel={look.Panel} chipOn={look.ChipOn} chipOff={look.ChipOff} accent={look.Accent}");
-                if (ok) TryWriteDump();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Report.AppendLine("TryResolve failed: " + e);
-                Current = look;
+                Current = look;      // keep the built-in defaults
             }
             return Resolved;
         }
@@ -71,18 +62,13 @@ namespace OthShared
         {
             var asset = FunStyleAsset.Instance;
             var sheet = asset != null ? asset.GetActiveStyleSheet() : null;
-            if (sheet == null) { Report.AppendLine("no active FunStyleSheet"); return false; }
-            Report.AppendLine($"style sheet: {sheet.styleName}");
+            if (sheet == null) return false;
 
             var named = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
             var colors = sheet.GetStyleElementList<FunStyleColorData>();
             if (colors != null)
                 for (int i = 0; i < colors.Count; i++)
-                {
-                    var c = colors[i];
-                    named[c.styleName ?? ""] = c.color;
-                    Report.AppendLine($"  color '{c.styleName}' {c.color}");
-                }
+                    named[colors[i].styleName ?? ""] = colors[i].color;
 
             Color Pick(string name, Color fallback) => named.TryGetValue(name, out var c) ? c : fallback;
             look.Text = Opaque(Pick("Typography/White", look.Text));
@@ -90,9 +76,8 @@ namespace OthShared
             look.ChipOn = Opaque(Pick("Typography/White", look.ChipOn));
             look.Accent = Opaque(Pick("Typography/Yellow", look.Accent));
             var glass = Pick("Modals/UnselectedItemBackground", new Color(0f, 0f, 0f, 0.4f));   // the game's translucent panel colour
-            look.Panel = new Color(glass.r, glass.g, glass.b, Mathf.Max(glass.a, 0.55f));        // we have no blur behind it: a bit denser
+            look.Panel = new Color(glass.r, glass.g, glass.b, Mathf.Max(glass.a, 0.55f));        // no blur behind it: a bit denser
             look.ChipOff = new Color(glass.r, glass.g, glass.b, Mathf.Max(glass.a, 0.5f));
-            look.Source = "style-sheet";
 
             var texts = sheet.GetStyleElementList<FunStyleTextData>();
             FunStyleTextData chosen = null;
@@ -100,7 +85,6 @@ namespace OthShared
                 for (int i = 0; i < texts.Count; i++)
                 {
                     var t = texts[i];
-                    Report.AppendLine($"  text '{t.styleName}' font={(t.fontAsset != null ? t.fontAsset.name : "null")} style={t.fontStyles}");
                     if (t.fontAsset == null) continue;
                     if (chosen == null || string.Equals(t.styleName, "Hud_Transfer_Selected", StringComparison.OrdinalIgnoreCase)) chosen = t;
                 }
@@ -108,23 +92,11 @@ namespace OthShared
             {
                 look.Font = chosen.fontAsset;
                 look.FontStyle = chosen.fontStyles;
-                Report.AppendLine($"using text style '{chosen.styleName}'");
             }
             return look.Font != null;
         }
 
         private static Color Opaque(Color c) => new Color(c.r, c.g, c.b, 1f);
-
-        internal static string DumpLook() { TryResolve(true); return Report.ToString(); }
-
-        private static bool _dumped;
-        private static void TryWriteDump()
-        {
-            if (_dumped) return;
-            _dumped = true;
-            try { File.WriteAllText(Path.Combine("UserData", "OTH-ui-style-dump.txt"), Report.ToString()); }
-            catch { /* diagnostics only */ }
-        }
 
         // ------------------------------------------------------------------ builders
 
@@ -175,10 +147,9 @@ namespace OthShared
                     var rc = rt.gameObject.AddComponent<ImageWithRoundedCorners>();
                     rc.radius = radius;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     _roundedBroken = true;      // shader missing or similar: plain squares from now on
-                    Report.AppendLine("rounded corners unavailable: " + e.Message);
                 }
             }
             return img;

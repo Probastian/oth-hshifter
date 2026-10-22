@@ -1,4 +1,4 @@
-# oth-hshifter
+﻿# oth-hshifter
 
 A SnowRunner-style **H-pattern manual shifter with a clutch** for [Over the Hill](https://store.steampowered.com/search/?term=over%20the%20hill) (MelonLoader mod). Hold a clutch button, move the right stick through a real H-gate, release the clutch and the gear engages.
 
@@ -12,7 +12,6 @@ A SnowRunner-style **H-pattern manual shifter with a clutch** for [Over the Hill
 - **Native HUD overlay** at the bottom centre, drawn with the game's own style sheet (font, colours, rounded corners): white gear chips that turn yellow when active, white rails, a round lever.
 - **Settings > Controls integration**: the game's *Automatic / Manual* selector gets a third option, **H-Shifter**. It is selected automatically on first run.
 - The game's own bumper shifting is ignored while the shifter is on (L1 is the clutch).
-- **F8** toggles the shifter, **F10** dumps diagnostics to the log.
 
 ## Requirements
 
@@ -26,7 +25,7 @@ A SnowRunner-style **H-pattern manual shifter with a clutch** for [Over the Hill
 2. Download `HShifter.dll` from the [latest release](../../releases/latest) and put it in `<game folder>\Mods`.
 3. Start the game. Settings > Controls > Automatic / Manual now offers **H-Shifter**.
 
-Settings live in `UserData\HShifter.cfg`. They can also be edited in-game with [oth-modconfigurator](https://github.com/Probastian/oth-modconfigurator) (Settings > Mods).
+Settings live in `UserData\HShifter.cfg`. They can also be edited in-game with [oth-modconfigurator](https://github.com/Probastian/oth-modconfigurator) (Settings > Mods and the Clutch button row in Settings > Controls).
 
 ## Settings (`UserData\HShifter.cfg`)
 
@@ -34,7 +33,6 @@ Settings live in `UserData\HShifter.cfg`. They can also be edited in-game with [
 |---|---|---|
 | `Enabled` | `true` | Same as choosing H-Shifter in Settings > Controls |
 | `ClutchButton` | `LeftShoulder` | Gamepad button used as clutch |
-| `ToggleKey` | `F8` | Keyboard key that toggles the shifter |
 | `LeverSpeed` | `15` | Lever speed at full stick deflection |
 | `StickDeadzone` | `0.25` | |
 | `UseTransferCase` | `true` | H/L columns and transfer-case switching |
@@ -42,7 +40,7 @@ Settings live in `UserData\HShifter.cfg`. They can also be edited in-game with [
 | `SuppressCameraStick` | `true` | Pause the camera while the clutch is held (mouse camera too) |
 | `ShowHud`, `HudScale`, `HudBottomOffset` | | Overlay |
 | `ForceActive` | `false` | Also run on vehicles not reported as manual |
-| `VerboseLog` | `true` | Log gear changes and state |
+| `VerboseLog` | `false` | Log clutch, gear and transfer-case changes |
 
 ## Multiplayer
 

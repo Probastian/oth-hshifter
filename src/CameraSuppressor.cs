@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Il2Cpp;
@@ -70,7 +70,7 @@ namespace HShifter
                 Disabled.Add(action);
                 if (Settings.VerboseLog.Value) Mod.Log.Msg($"[camera] paused {action.name}");
             }
-            if (Disabled.Count == 0) Mod.Log.Warning("No enabled camera actions found - camera may still move with the stick. Press F10 for a binding dump.");
+            if (Disabled.Count == 0) Mod.Log.Warning("No enabled camera actions found - the camera may still move with the stick.");
         }
 
         private static void Restore()
@@ -83,29 +83,5 @@ namespace HShifter
             Disabled.Clear();
         }
 
-        /// <summary>Human-readable dump of the camera + driving actions' bindings (diagnostics).</summary>
-        internal static string Describe()
-        {
-            var sb = new StringBuilder();
-            try
-            {
-                var pia = GameInput.PlayerInputActions;
-                if (pia == null) return "PlayerInputActions == null";
-                var actions = new List<InputAction>(CameraActions(pia))
-                {
-                    pia.m_Driving_Clutch, pia.m_Driving_GearShiftUp, pia.m_Driving_GearShiftDown,
-                };
-                foreach (var a in actions)
-                {
-                    if (a == null) continue;
-                    sb.Append("  ").Append(a.name).Append(a.enabled ? " (enabled): " : " (disabled): ");
-                    var b = a.bindings;
-                    for (int i = 0; i < b.Count; i++) sb.Append('[').Append(b[i].effectivePath).Append("] ");
-                    sb.AppendLine();
-                }
-            }
-            catch (Exception e) { sb.Append("Describe failed: ").Append(e.Message); }
-            return sb.ToString();
-        }
     }
 }

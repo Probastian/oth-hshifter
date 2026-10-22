@@ -46,13 +46,13 @@ namespace HShifter
         {
             if (option == HShifterIndex)
             {
-                if (!Settings.Enabled.Value) Mod.Log.Msg("Controls: H-Shifter selected");
+                if (!Settings.Enabled.Value && Settings.VerboseLog.Value) Mod.Log.Msg("Controls: H-Shifter selected");
                 Settings.Enabled.Value = true;
                 option = (int)ControlsSettingsState.ThrottleAndBrakeBehaviour.Manual;      // the game itself stays on Manual
             }
             else
             {
-                if (Settings.Enabled.Value) Mod.Log.Msg($"Controls: switched to the game's {(option == 0 ? "Automatic" : "Manual")} mode, H-Shifter off");
+                if (Settings.Enabled.Value && Settings.VerboseLog.Value) Mod.Log.Msg($"Controls: switched to the game's {(option == 0 ? "Automatic" : "Manual")} mode, H-Shifter off");
                 Settings.Enabled.Value = false;
             }
         }
@@ -112,7 +112,7 @@ namespace HShifter
                 if (!has) list.Add(OptionText);
                 carousel.SetOptions(list);
                 _extended = true;
-                Mod.Log.Msg($"Controls page: added the '{OptionText}' option to the Automatic/Manual selector ({list.Count} options)");
+                if (Settings.VerboseLog.Value) Mod.Log.Msg($"Controls page: added the '{OptionText}' option to the Automatic/Manual selector ({list.Count} options)");
             }
 
             // keep the selector showing H-Shifter whenever it is the active choice (the game resets it to the plain mode on refresh)

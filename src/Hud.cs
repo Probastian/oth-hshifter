@@ -32,7 +32,6 @@ namespace HShifter
         private static float _builtScale = -1f, _builtOffset = -1f;
         private static int _cols;
         private static float _gateCenterY;
-        private static bool _loggedShown;
 
         internal static void Tick(bool visible)
         {
@@ -51,15 +50,6 @@ namespace HShifter
 
             if (!_canvas.activeSelf) _canvas.SetActive(true);
             Refresh(gate);
-
-            if (!_loggedShown)
-            {
-                _loggedShown = true;
-                var c = _canvas.GetComponent<Canvas>();
-                Mod.Log.Msg($"[hud] shown: screen {Screen.width}x{Screen.height}, canvas scale {c.scaleFactor:0.###}, look={GameUi.Current.Source}, " +
-                            $"font={(GameUi.Current.Font != null ? GameUi.Current.Font.name : "none")}, panelPos={_root.anchoredPosition}, size={_root.sizeDelta}");
-                Mod.Log.Msg(OthShared.BlurDiag.Status());
-            }
         }
 
         internal static void Destroy()

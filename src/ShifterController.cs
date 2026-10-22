@@ -26,8 +26,6 @@ namespace HShifter
     {
         internal static readonly HGate Gate = new HGate();
 
-        /// <summary>Toggled by the user (ToggleKey).</summary>
-        internal static bool UserEnabled = true;
         /// <summary>The shifter owns gear selection for the local vehicle (manual gearbox + gamepad + gameplay).</summary>
         internal static bool Engaged { get; private set; }
         /// <summary>The clutch is held right now (stick moves the lever, car is in N).</summary>
@@ -60,13 +58,7 @@ namespace HShifter
         private static int _stepCount;
         private static bool _buttonsGaveUp;
 
-        private static int _lastSelected = int.MinValue;
-        private static int _lastStatusGear = int.MinValue;
-        private static int _lastManualGear = int.MinValue;
-        private static int _lastStatusLow = -1;
         private static string _layoutSig = "";
-        private static string _lastStateKey = "";
-        private static float _lastStateLog;
         private static float _nextDiscover;
         private static int _faults;
         private static int _fwd = 6, _rev = 1;
@@ -142,12 +134,9 @@ namespace HShifter
 
             // 2. should we own the gearbox right now?
             string reason = !Settings.Enabled.Value ? "disabled"
-                          : !UserEnabled ? "toggled-off"
                           : !_usable ? "gearbox-not-manual"
                           : NotGameplayReason();
             SetEngaged(reason == null);
-            LogState(reason);
-            Diagnose(vi);
             if (!Engaged) { Hud.Tick(false); return; }
 
             ReconfigureIfNeeded();
@@ -163,7 +152,6 @@ namespace HShifter
                 CameraSuppressor.Maintain();
                 Gate.Move(ReadRightStick(), Time.unscaledDeltaTime, Settings.LeverSpeed.Value, Settings.StickDeadzone.Value);
             }
-            LogThrottleAfterRelease(vi);
 
             TrackRange();
             DriveGear();
@@ -286,25 +274,7 @@ namespace HShifter
                 }
             }
             CameraSuppressor.Set(false);
-            _releasedAt = Now;
-            _throttleLogStage = 0;
             if (Settings.VerboseLog.Value) Mod.Log.Msg($"[clutch] released - engaging {d.Label} (gear {d.Gear}, range {d.Range})");
-        }
-
-        // Diagnostics for "throttle held through a shift is ignored": compares the trigger with what the game's input took.
-        private static float _releasedAt = -10f;
-        private static int _throttleLogStage = 2;
-
-        private static void LogThrottleAfterRelease(VehicleInput vi)
-        {
-            if (!Settings.VerboseLog.Value || ClutchHeld || _throttleLogStage >= 2) return;
-            float since = Now - _releasedAt;
-            if (since < (_throttleLogStage == 0 ? 0.15f : 0.8f)) return;
-            _throttleLogStage++;
-            float trigger = 0f;
-            var pad = Gamepad.current;
-            if (pad != null) trigger = pad.rightTrigger.ReadValue();
-            Mod.Log.Msg($"[throttle] {since:0.00}s after release: right trigger={trigger:0.00}, game prevFrameThrottle={vi.prevFrameThrottle:0.00}");
         }
 
         /// <summary>Keeps pulsing the hi/lo toggle until the vehicle reports the wanted range (or gives up).</summary>
@@ -351,25 +321,6 @@ namespace HShifter
             catch (Exception e) { return "error:" + e.Message; }
         }
 
-        private static void LogState(string reason)
-        {
-            if (!Settings.VerboseLog.Value) return;
-            string map = "?", scheme = "?", src = "?", inputEnabled = "?";
-            try
-            {
-                var m = GameInput.CurrentMap; map = m != null && m.HasValue ? m.Value.ToString() : "none";
-                scheme = GameInput.ControlScheme.ToString();
-                src = GameInput.LastInputSource.ToString();
-                if (_fusionInput != null) inputEnabled = ((bool)_fusionInput.inputIsEnabled).ToString();
-            }
-            catch { /* diagnostics only */ }
-            string key = $"{reason ?? "ok"}|{map}|{scheme}|{src}|{inputEnabled}|{Time.timeScale > 0.001f}";
-            if (key == _lastStateKey || Now - _lastStateLog < 0.25f) return;
-            _lastStateKey = key;
-            _lastStateLog = Now;
-            Mod.Log.Msg($"[state] {(reason == null ? "ENGAGED" : "off: " + reason)}  map={map} scheme={scheme} lastInput={src} vehicleInputEnabled={inputEnabled} timeScale={Time.timeScale:0.##}");
-        }
-
         private static void SetEngaged(bool on)
         {
             if (on == Engaged) return;
@@ -380,7 +331,7 @@ namespace HShifter
                 _rangePending = false;
                 _directSince = 0f;
                 _stepCount = 0;
-                Mod.Log.Msg($"H-shifter ON for {_vehicleName} (gear {_engagedGear}, authority={HasAuthority()})");
+                if (Settings.VerboseLog.Value) Mod.Log.Msg($"H-shifter ON for {_vehicleName} (gear {_engagedGear}, authority={HasAuthority()})");
             }
             else
             {
@@ -389,7 +340,7 @@ namespace HShifter
                 _rangePending = false;
                 CameraSuppressor.Set(false);
                 Hud.Tick(false);
-                Mod.Log.Msg("H-shifter off");
+                if (Settings.VerboseLog.Value) Mod.Log.Msg("H-shifter off");
             }
         }
 
@@ -431,8 +382,6 @@ namespace HShifter
             _directFailed = false;
             _buttonsGaveUp = false;
             _requestedBit = _inFlightBit = -1;
-            _lastSelected = _lastStatusGear = _lastManualGear = int.MinValue;
-            _lastStatusLow = -1;
             _layoutSig = "";
             _vehicleName = vi.gameObject != null ? vi.gameObject.name : "?";
 
@@ -457,7 +406,7 @@ namespace HShifter
 
             ReconfigureIfNeeded();
 
-            Mod.Log.Msg($"[bind] vehicle='{_vehicleName}' vpc={(vpc != null)} status={(_status != null)} fusionInput={(_fusionInput != null)} gearboxType={type} " +
+            if (Settings.VerboseLog.Value) Mod.Log.Msg($"[bind] vehicle='{_vehicleName}' vpc={(vpc != null)} status={(_status != null)} fusionInput={(_fusionInput != null)} gearboxType={type} " +
                         $"forward={_fwd} reverse={_rev} gear={ActualGear()} stateAuthority={HasAuthority()} usable={_usable} hiLo={_hiLo} columns={Gate.ColumnCount}");
             if (!_usable)
                 Mod.Log.Msg("[bind] This vehicle's gearbox is not reported as Manual, so the H-shifter stays off. Set ForceActive=true in UserData\\HShifter.cfg to override.");
@@ -473,41 +422,5 @@ namespace HShifter
             Gate.Configure(_fwd, _rev, _hiLo, Settings.ReverseOnRight.Value);
         }
 
-        private static void Diagnose(VehicleInput vi)
-        {
-            if (!Settings.VerboseLog.Value) return;
-
-            int sel = vi.selectedGear;
-            if (sel != _lastSelected) { Mod.Log.Msg($"[diag] vehicleInput.selectedGear {_lastSelected} -> {sel}"); _lastSelected = sel; }
-            if (_fusionInput != null)
-            {
-                int m = _fusionInput.SelectedManualGear;
-                if (m != _lastManualGear) { Mod.Log.Msg($"[diag] car SelectedManualGear {_lastManualGear} -> {m} (engaged: {Engaged}, clutch: {ClutchHeld})"); _lastManualGear = m; }
-            }
-            if (_status != null)
-            {
-                int g = _status.GearboxGear;
-                if (g != _lastStatusGear) { Mod.Log.Msg($"[diag] vehicle status gearboxGear {_lastStatusGear} -> {g}"); _lastStatusGear = g; }
-                int low = _status.GearboxIsLowTransferCase ? 1 : 0;
-                if (low != _lastStatusLow) { Mod.Log.Msg($"[diag] vehicle status lowRange {_lastStatusLow} -> {low}"); _lastStatusLow = low; }
-            }
-        }
-
-        internal static void DumpDiagnostics()
-        {
-            Mod.Log.Msg("---- HShifter diagnostics ----");
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < Gamepad.all.Count; i++) sb.Append(Gamepad.all[i]?.displayName).Append(i == Gamepad.all.Count - 1 ? "" : ", ");
-            Mod.Log.Msg($"enabled={Settings.Enabled.Value} userEnabled={UserEnabled} engaged={Engaged} clutch={ClutchHeld} usable={_usable} hiLo={_hiLo} " +
-                        $"vehicle='{_vehicleName}' pads=[{sb}] clutchButton={Settings.ParseClutchButton()} notGameplayReason={NotGameplayReason() ?? "none"}");
-            Mod.Log.Msg($"gear: actual={ActualGear()} engagedTarget={_engagedGear} stateAuthority={HasAuthority()} directFailed={_directFailed} buttonsGaveUp={_buttonsGaveUp}");
-            Mod.Log.Msg($"gate: forward={Gate.Forward} reverse={Gate.Reverse} columns={Gate.ColumnCount} lever=({Gate.LeverX:0.00},{Gate.LeverY:0.00}) desired={Gate.Desired.Label}");
-            for (int i = 0; i < Gate.Columns.Count; i++)
-                Mod.Log.Msg($"  col {i}: up={Gate.Columns[i].Up.Label} down={Gate.Columns[i].Down.Label}");
-            Mod.Log.Msg("input bindings:\n" + CameraSuppressor.Describe());
-            Mod.Log.Msg("ui look:\n" + OthShared.GameUi.DumpLook());
-            Mod.Log.Msg(OthShared.BlurDiag.Status());
-            Mod.Log.Msg("------------------------------");
-        }
     }
 }
