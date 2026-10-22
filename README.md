@@ -33,6 +33,7 @@ Settings live in `UserData\HShifter.cfg`. They can also be edited in-game with [
 |---|---|---|
 | `Enabled` | `true` | Same as choosing H-Shifter in Settings > Controls |
 | `ClutchButton` | `LeftShoulder` | Gamepad button used as clutch |
+| `ClutchKey` | `None` | Optional keyboard key used as clutch (the lever still moves with the right stick) |
 | `LeverSpeed` | `15` | Lever speed at full stick deflection |
 | `StickDeadzone` | `0.25` | |
 | `UseTransferCase` | `true` | H/L columns and transfer-case switching |

@@ -143,7 +143,7 @@ namespace HShifter
 
             // 3. clutch + stick (union of all connected pads)
             var clutchButton = Settings.ParseClutchButton();
-            bool clutch = clutchButton.HasValue && AnyPressed(clutchButton.Value);
+            bool clutch = (clutchButton.HasValue && AnyPressed(clutchButton.Value)) || KeyClutchHeld();
             if (clutch && !ClutchHeld) BeginShift();
             else if (!clutch && ClutchHeld) EndShift();
             ClutchHeld = clutch;
@@ -222,6 +222,13 @@ namespace HShifter
         }
 
         // ---------------------------------------------------------------- input devices
+
+        private static bool KeyClutchHeld()
+        {
+            var key = Settings.ParseClutchKey();
+            var kb = Keyboard.current;
+            return key.HasValue && kb != null && kb[key.Value].isPressed;
+        }
 
         private static bool AnyPressed(GamepadButton button)
         {
@@ -312,7 +319,8 @@ namespace HShifter
             try
             {
                 if (Gamepad.all.Count == 0 && Gamepad.current == null) return "no-gamepad";
-                if (GameInput.ControlScheme != GameInput.ControlSchemeType.Gamepad && GameInput.LastInputSource != GameInput.InputSource.Gamepad)
+                // a keyboard clutch is held while the game already switched to the keyboard scheme: that still counts as gamepad driving
+                if (GameInput.ControlScheme != GameInput.ControlSchemeType.Gamepad && GameInput.LastInputSource != GameInput.InputSource.Gamepad && !KeyClutchHeld())
                     return "scheme:" + GameInput.ControlScheme;
                 var map = GameInput.CurrentMap;
                 if (map != null && map.HasValue && MenuMaps.Contains(map.Value)) return "map:" + map.Value;

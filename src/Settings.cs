@@ -1,6 +1,7 @@
 ﻿using System;
 using MelonLoader;
 using MelonLoader.Preferences;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 
 namespace HShifter
@@ -15,6 +16,7 @@ namespace HShifter
 
         internal static MelonPreferences_Entry<bool> Enabled;
         internal static MelonPreferences_Entry<string> ClutchButton;
+        internal static MelonPreferences_Entry<string> ClutchKey;
         internal static MelonPreferences_Entry<bool> UseTransferCase;
         internal static MelonPreferences_Entry<float> StickDeadzone;
         internal static MelonPreferences_Entry<float> LeverSpeed;
@@ -33,6 +35,7 @@ namespace HShifter
 
             Enabled = _cat.CreateEntry("Enabled", true, "Use H-Shifter", "Same as choosing H-Shifter in Settings > Controls (Automatic / Manual / H-Shifter). On by default: the first time the mod runs it switches the game to its Manual gearbox mode and selects H-Shifter.");
             ClutchButton = _cat.CreateEntry("ClutchButton", "LeftShoulder", "Clutch button", "Gamepad button that acts as the clutch: hold it to shift (gear drops to N, right stick moves the lever), release to engage. LeftShoulder = L1.");
+            ClutchKey = _cat.CreateEntry("ClutchKey", "None", "Clutch key", "Keyboard key that acts as the clutch (the gear lever is still moved with the gamepad's right stick). None = no keyboard clutch.");
             UseTransferCase = _cat.CreateEntry("UseTransferCase", true, "Hi/Lo range columns", "Add High/Low range columns (1L 2L 1H 2H) and switch the transfer case when shifting into them.");
             StickDeadzone = _cat.CreateEntry("StickDeadzone", 0.25f, "Stick deadzone", "Stick magnitude below this counts as 'released'.",
                 validator: new ValueRange<float>(0.05f, 0.6f));
@@ -46,6 +49,14 @@ namespace HShifter
             HudBottomOffset = _cat.CreateEntry("HudBottomOffset", 36f, "Overlay bottom offset", "Distance of the overlay from the bottom screen edge, in HUD pixels (1080p reference).",
                 validator: new ValueRange<float>(0f, 600f));
             VerboseLog = _cat.CreateEntry("VerboseLog", false, "Verbose log", "Log clutch, gear and transfer-case changes to the MelonLoader console.");
+        }
+
+        /// <summary>The keyboard clutch key, or null when none is set.</summary>
+        internal static Key? ParseClutchKey()
+        {
+            string s = ClutchKey.Value;
+            if (string.IsNullOrWhiteSpace(s) || s.Equals("None", StringComparison.OrdinalIgnoreCase)) return null;
+            return Enum.TryParse<Key>(s, true, out var k) ? k : (Key?)null;
         }
 
         /// <summary>The clutch button, or null when the binding was removed (Settings > Controls > remove binding).</summary>
