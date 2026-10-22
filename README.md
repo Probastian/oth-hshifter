@@ -66,6 +66,10 @@ If the game is not in the default Steam path, create `GamePath.user.props`:
 
 No game files are included in this repository; the project references your local game and MelonLoader assemblies.
 
+## Bug reports and contributions
+
+Please report bugs using [GitHub issues](https://github.com/Probastian/oth-hshifter/issues). Pull requests and forks are welcome.
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
