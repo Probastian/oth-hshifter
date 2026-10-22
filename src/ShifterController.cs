@@ -142,7 +142,8 @@ namespace HShifter
             ReconfigureIfNeeded();
 
             // 3. clutch + stick (union of all connected pads)
-            bool clutch = AnyPressed(Settings.ParseClutchButton());
+            var clutchButton = Settings.ParseClutchButton();
+            bool clutch = clutchButton.HasValue && AnyPressed(clutchButton.Value);
             if (clutch && !ClutchHeld) BeginShift();
             else if (!clutch && ClutchHeld) EndShift();
             ClutchHeld = clutch;

@@ -48,9 +48,12 @@ namespace HShifter
             VerboseLog = _cat.CreateEntry("VerboseLog", false, "Verbose log", "Log clutch, gear and transfer-case changes to the MelonLoader console.");
         }
 
-        internal static GamepadButton ParseClutchButton()
+        /// <summary>The clutch button, or null when the binding was removed (Settings > Controls > remove binding).</summary>
+        internal static GamepadButton? ParseClutchButton()
         {
-            return Enum.TryParse<GamepadButton>(ClutchButton.Value, true, out var b) ? b : GamepadButton.LeftShoulder;
+            string s = ClutchButton.Value;
+            if (string.IsNullOrWhiteSpace(s) || s.Equals("None", StringComparison.OrdinalIgnoreCase)) return null;
+            return Enum.TryParse<GamepadButton>(s, true, out var b) ? b : GamepadButton.LeftShoulder;
         }
     }
 }

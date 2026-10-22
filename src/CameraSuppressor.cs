@@ -70,7 +70,7 @@ namespace HShifter
                 Disabled.Add(action);
                 if (Settings.VerboseLog.Value) Mod.Log.Msg($"[camera] paused {action.name}");
             }
-            if (Disabled.Count == 0) Mod.Log.Warning("No enabled camera actions found - the camera may still move with the stick.");
+            if (Disabled.Count == 0 && Settings.VerboseLog.Value) Mod.Log.Warning("No enabled camera actions found - the camera may still move with the stick.");
         }
 
         private static void Restore()
